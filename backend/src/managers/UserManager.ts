@@ -25,12 +25,14 @@ export class UserManager{
         socket
       });
       this.queue.push(socket.id);
+      socket.send("lobby")
       this.clearQueue();
       this.initHandlers(socket);
     }
 
    removerUser(socketId:string){
-   this.users =  this.users.filter((user)=>user.socket.id === socketId);
+    const user = this.users.filter((user)=>user.socket.id === socketId)
+   this.users =  this.users.filter((user)=>user.socket.id !== socketId);
    this.queue =  this.queue.filter((soc)=> soc === socketId);
 
    }
@@ -38,18 +40,27 @@ export class UserManager{
 
 
    clearQueue(){
-        if(this.queue.length<2){
+    console.log("inside clear queues")    
+    console.log(this.queue.length)    
+    if(this.queue.length<2){
             return
         }
+        
 
-        const user1 = this.users.find((user)=>user.socket.id === this.queue.pop());
-        const user2 = this.users.find((user)=>user.socket.id === this.queue.pop());
-      
+        const id1 = this.queue.pop();
+        const id2 = this.queue.pop();
+        // console.log(`ids are first:${id1} , second:${id2}`)
+        const user1 = this.users.find((user)=>user.socket.id === id1);
+        const user2 = this.users.find((user)=>user.socket.id === id2);
+        
+        // console.log(user1)
+        // console.log(user2)
         if(!user1 ||!user2){
           return;
         }
+        console.log("creating room")
          const room = this.roomManager.createRoom(user1,user2)
-        
+        this.clearQueue()
 
    }
   
