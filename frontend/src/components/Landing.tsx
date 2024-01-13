@@ -48,11 +48,14 @@ if(!joined){
           setName(e.target.value)
       }}>
       </input>
-      <Link  to={`/room?name=${name}`} onClick={()=>{
+      <button onClick={()=>{
+        setJoined(true)
+      }}>JOIN </button>
+      {/* <Link  to={`/room?name=${name}`} onClick={()=>{
           // join a room logic
       }}>
       JOIN
-      </Link>
+      </Link> */}
   </div>
   )
 

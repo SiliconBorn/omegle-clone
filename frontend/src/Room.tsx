@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom"
 import { Socket, io } from "socket.io-client";
 
@@ -11,8 +11,8 @@ localAudioTrack,
 localVideoTrack
 }:{
     name:string,
-    localAudioTrack:MediaStreamTrack,
-    localVideoTrack:MediaStreamTrack
+    localAudioTrack:null|MediaStreamTrack,
+    localVideoTrack:null|MediaStreamTrack
 
 }) => {
 
@@ -24,9 +24,9 @@ const [sendingPc,setSendingPc] = useState<null|RTCPeerConnection>(null);
 const [receivingPc,setReceivingingPc] = useState<null|RTCPeerConnection>(null);
 const [remoteVideoTrack,setRemoteVideoTrack] = useState<null|MediaStreamTrack>(null);
 const [remoteAudioTrack,setRemoteAudioTrack] = useState<null|MediaStreamTrack>(null);
-
-
-
+const [remoteMediaStream,setRemoteMediaStream] = useState<null|MediaStream>(null)
+const remoteVideoRef =useRef<HTMLVideoElement>(null)
+const localVideoRef =useRef<HTMLVideoElement>(null)
 
 
 useEffect(()=>{
@@ -36,8 +36,13 @@ socket.on("send-offer",async({roomId})=>{
     setLobby(false)
     const pc = new RTCPeerConnection();
     setSendingPc(pc);
-pc.addTrack(localAudioTrack)
-pc.addTrack(localVideoTrack)
+    if(localAudioTrack){
+        pc.addTrack(localAudioTrack)
+        
+    }
+    if(localVideoTrack){
+        pc.addTrack(localVideoTrack)
+    }
     pc.onicecandidate = async()=>{
     const sdp = await pc.createOffer();
     socket.emit("offer",{
@@ -56,16 +61,26 @@ socket.on("offer",async({roomId,offer})=>{
        pc.setRemoteDescription({sdp:offer,type:"offer"})
 
        const sdp = await pc.createAnswer();
-
+       const stream =  new MediaStream()
+       if(remoteVideoRef.current){
+           remoteVideoRef.current.srcObject = stream
+       }
+      setRemoteMediaStream(stream)
        //trickle ice
        
        setReceivingingPc(pc);
        pc.ontrack = (({track,type})=>{
         if(type==="audio"){
-            setRemoteAudioTrack(track);
+            // setRemoteAudioTrack(track);
+            // @ts-ignore
+            remoteVideoRef.current.srcObject.addTrack(track)
         }else{
-            setRemoteVideoTrack(track)
+            // setRemoteVideoTrack(track)
+            // @ts-ignore
+            remoteVideoRef.current.srcObject.addTrack(track)
         }
+        // @ts-ignore
+        remoteVideoRef.current.play();
        })
     socket.emit("answer",{
         sdp,
@@ -93,18 +108,24 @@ socket.on("lobby",()=>{
 setSocket(socket)
 },[name])
 
-if(lobby){
-    return<div>
-        WAITING TO CONNECT TO SOMEONE
-    </div>
-}
+useEffect(()=>{
+
+    if(localVideoRef.current){
+        if(localVideoTrack){
+
+            localVideoRef.current.srcObject = new MediaStream([localVideoTrack]);
+            localVideoRef.current.play();
+        }
+    }
+},[localVideoRef,localVideoTrack])
 
 return (
     <div>
         Hi!!!! {name}
 
-        <video width={400} height={400}/>
-        <video width={400} height={400}/>
+        <video autoPlay width={400} height={400} ref={localVideoRef}/>
+        {lobby? "WAITING TO CONNECT YOU TO SOMEONE":null}
+        <video autoPlay width={400} height={400} ref={remoteVideoRef}/>
     </div>
   )
 }
