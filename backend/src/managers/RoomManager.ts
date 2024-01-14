@@ -37,7 +37,7 @@ export class RoomManager{
         return;
       }
 
-        const receivingUser = room.user1.socket.id === senderSocketId ? room.user1: room.user2;
+        const receivingUser = room.user1.socket.id === senderSocketId ? room.user2: room.user1;
          
         //  const user2 = this.rooms.get(roomId)?.user2;
          console.log(`onOffer`)
@@ -56,7 +56,7 @@ export class RoomManager{
         return;
       }
 
-        const receivingUser = room.user1.socket.id === senderSocketId ? room.user1: room.user2;
+        const receivingUser = room.user1.socket.id === senderSocketId ? room.user2: room.user1;
       // const user1 = this.rooms.get(roomId)?.user1;
          console.log(`onAnswer`)
          console.log(`user1 is ${receivingUser}`)
@@ -73,8 +73,8 @@ export class RoomManager{
         return;
       }
 
-        const receivingUser = room.user1.socket.id === senderSocketId ? room.user1: room.user2;
-        receivingUser.socket.send("add-ice-candidate",({candidate,type}))
+        const receivingUser = room.user1.socket.id === senderSocketId ? room.user2: room.user1;
+        receivingUser.socket.emit("add-ice-candidate",({candidate,type}))
     }
 
     
