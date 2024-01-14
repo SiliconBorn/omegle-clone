@@ -43,24 +43,44 @@ socket.on("send-offer",async({roomId})=>{
     if(localVideoTrack){
         pc.addTrack(localVideoTrack)
     }
-    pc.onicecandidate = async()=>{
-    const sdp = await pc.createOffer();
-    socket.emit("offer",{
-        sdp,
-        roomId
-    });
+    
+    pc.onicecandidate = async(e)=>{
+        if(e.candidate){
+            pc.addIceCandidate(e.candidate);
+            socket.emit("add-ice-candidate",{
+                candidate:e.candidate,
+                type:"sender"
+            })
+        }
+    
+    }
+
+    pc.onnegotiationneeded = async()=>{
+        setTimeout(async()=>{
+            const sdp = await pc.createOffer();
+            // @ts-ignore
+            pc.setLocalDescription(sdp)
+        socket.emit("offer",{
+            sdp,
+            roomId
+        });
+
+        },2000)
+        // alert("onnegotiation needed")
 
     }
 })
 
 
-socket.on("offer",async({roomId,offer})=>{
+socket.on("offer",async({roomId,sdp:remoteSdp})=>{
     // alert("send answer please!!");
       setLobby(false)
     const pc = new RTCPeerConnection();
-       pc.setRemoteDescription({sdp:offer,type:"offer"})
+       pc.setRemoteDescription(remoteSdp)
 
        const sdp = await pc.createAnswer();
+    //    @ts-ignore
+       pc.setLocalDescription(sdp)
        const stream =  new MediaStream()
        if(remoteVideoRef.current){
            remoteVideoRef.current.srcObject = stream
@@ -69,6 +89,19 @@ socket.on("offer",async({roomId,offer})=>{
        //trickle ice
        
        setReceivingingPc(pc);
+
+
+       pc.onicecandidate = async(e)=>{
+        if(e.candidate){
+            pc.addIceCandidate(e.candidate);
+            socket.emit("add-ice-candidate",{
+                candidate:e.candidate,
+                type:"receiver"
+            })
+        }
+    
+    }
+
        pc.ontrack = (({track,type})=>{
         if(type==="audio"){
             // setRemoteAudioTrack(track);
@@ -88,14 +121,11 @@ socket.on("offer",async({roomId,offer})=>{
     });
 })
 
-socket.on("answer",({roomId,answer})=>{
+socket.on("answer",({roomId,sdp:remoteSdp})=>{
     setLobby(false)
     // alert("connection done!!")
     setSendingPc(pc=>{
-        pc?.setRemoteDescription({
-            type:"answer",
-            sdp:answer
-        })
+        pc?.setRemoteDescription(remoteSdp)
         return pc
     })
      
@@ -103,6 +133,20 @@ socket.on("answer",({roomId,answer})=>{
 
 socket.on("lobby",()=>{
     setLobby(true)
+})
+
+socket.on("add-ice-candidate",({candidate,type})=>{
+    if(type=="sender"){
+      setReceivingingPc(pc=>{
+        pc?.addIceCandidate(candidate);
+        return pc
+      })
+    }else{
+        setReceivingingPc(pc=>{
+            pc?.addIceCandidate(candidate);
+            return pc
+        })
+    }
 })
 
 setSocket(socket)

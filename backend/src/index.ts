@@ -23,6 +23,8 @@ io.on("connection",(socket:Socket)=>{
 
     socket.on("disconnect",()=>{
         userManager.removerUser(socket.id)
+        console.log(`user disconnected  `)
+
     })
 });
 

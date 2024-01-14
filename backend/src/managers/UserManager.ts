@@ -49,7 +49,7 @@ export class UserManager{
 
         const id1 = this.queue.pop();
         const id2 = this.queue.pop();
-        // console.log(`ids are first:${id1} , second:${id2}`)
+        console.log(`ids are first:${id1} , second:${id2}`)
         const user1 = this.users.find((user)=>user.socket.id === id1);
         const user2 = this.users.find((user)=>user.socket.id === id2);
         
@@ -66,10 +66,15 @@ export class UserManager{
   
    initHandlers(socket:Socket){
     socket.on("offer",({sdp,roomId}:{sdp:string,roomId:string})=>{
-       this.roomManager.onOffer(roomId,sdp)
+       this.roomManager.onOffer(roomId,sdp,socket.id)
     })
+    
     socket.on("answer",({sdp,roomId}:{sdp:string,roomId:string})=>{
-      this.roomManager.onAnswer(roomId,sdp)
+      this.roomManager.onAnswer(roomId,sdp,socket.id)
+   })
+
+   socket.on("add-ice-candidate",({candidate,roomId,type})=>{
+        this.roomManager.onIceCandidates(roomId,socket.id,candidate,type)
    })
    }
 
